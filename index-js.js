@@ -1,41 +1,43 @@
 import { createWalletClient, custom } from "https://esm.sh/viem";
 
-const connectButton = document.getElementById('connectButton');
-let walletClient;
+const connectButton = document.getElementById("connectButton");
 
-// Make the function async
+let walletClient; // Variable to hold the wallet client instance
+
 async function connect() {
-    // Check if window.ethereum is present
-    if (typeof window.ethereum !== "undefined") {
-        console.log("MetaMask (or compatible wallet) is available!");
+  // 1. Check if the MetaMask provider (window.ethereum) is available
+  if (typeof window.ethereum !== "undefined") {
+    console.log("MetaMask is installed!");
 
-        console.log("Connecting using viem...");
+    try {
+      // 2. Create a Wallet Client using viem's custom transport
+      // This configures viem to use MetaMask's injected provider
+      walletClient = createWalletClient({
+        transport: custom(window.ethereum),
+      });
 
-        // Create a Wallet Client
-        walletClient = createWalletClient({
-            transport: custom(window.ethereum) // Use the browser's injected provider
-        });
+      // 3. Request access to the user's accounts
+      // This triggers the MetaMask connection prompt if not already authorized
+      await walletClient.requestAddresses();
 
-        try {
-            // Request wallet connection (account addresses)
-            // Wait for the user to connect their wallet
-            const addresses = await walletClient.requestAddresses();
-            console.log("Connected accounts:", addresses); // Log the connected address(es)
+      // 4. Update the UI to indicate a successful connection
+      connectButton.innerHTML = "Connected!";
 
-            // This code now runs ONLY AFTER the await completes successfully
-            connectButton.innerHTML = `Connected: ${addresses[0].slice(0, 6)}...`; // Show part of address
-            console.log("Connection successful!");
+      // Now you can use walletClient for further interactions
+      // e.g., const accounts = await walletClient.getAddresses();
+      // console.log("Connected accounts:", accounts);
 
-        } catch (error) {
-            // Handle errors, like the user rejecting the connection
-            console.error("Connection failed:", error);
-            connectButton.innerHTML = "Connect"; // Reset button text on failure
-        }
-    } else {
-        // Wallet is not installed
-        console.log("No wallet detected.");
-        connectButton.innerHTML = "Please install MetaMask!"; // Update button text
+    } catch (error) {
+      // Handle potential errors during connection (e.g., user rejection)
+      console.error("Failed to connect:", error);
+      connectButton.innerHTML = "Connection Failed";
     }
+
+  } else {
+    // 5. Update UI if MetaMask is not detected
+    connectButton.innerHTML = "Please install MetaMask!";
+  }
 }
 
+// 6. Attach the connect function to the button's click event
 connectButton.onclick = connect;
