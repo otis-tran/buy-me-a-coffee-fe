@@ -60,8 +60,8 @@ async function fund() {
       })
 
       console.log("Transaction request: ", request)
-      // const hash = await walletClient.writeContract(request)
-      // console.log("Transaction processed: ", hash)
+      const hash = await walletClient.writeContract(request)
+      console.log("Transaction processed: ", hash)
     } catch (error) {
       console.log(error)
     }
