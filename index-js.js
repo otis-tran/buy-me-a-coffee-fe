@@ -90,38 +90,77 @@ async function getCurrentChain(client) {
 }
 
 async function getBalance() {
-    // Check if a browser Ethereum provider (like MetaMask) is available
-    if (typeof window.ethereum !== "undefined") {
-        // Create a Public Client using viem
-        // This client is used for read-only interactions
-        const publicClient = createPublicClient({
-            // Connects viem to the browser's Ethereum provider (e.g., MetaMask)
-            transport: custom(window.ethereum)
-        });
+  // Check if a browser Ethereum provider (like MetaMask) is available
+  if (typeof window.ethereum !== "undefined") {
+    // Create a Public Client using viem
+    // This client is used for read-only interactions
+    const publicClient = createPublicClient({
+      // Connects viem to the browser's Ethereum provider (e.g., MetaMask)
+      transport: custom(window.ethereum)
+    });
 
-        try {
-            // Use the publicClient to fetch the balance of the specified address
-            const balance = await publicClient.getBalance({
-                address: contractAddress // The address of the smart contract
-            });
+    try {
+      // Use the publicClient to fetch the balance of the specified address
+      const balance = await publicClient.getBalance({
+        address: contractAddress // The address of the smart contract
+      });
 
-            // The balance is returned in Wei as a BigInt
-            // Format it into Ether for user-friendly display
-            const formattedBalance = formatEther(balance);
+      // The balance is returned in Wei as a BigInt
+      // Format it into Ether for user-friendly display
+      const formattedBalance = formatEther(balance);
 
-            // Log the formatted balance to the console
-            console.log(`Contract Balance: ${formattedBalance} ETH`);
-            // You could update a UI element here instead of logging
+      // Log the formatted balance to the console
+      console.log(`Contract Balance: ${formattedBalance} ETH`);
+      // You could update a UI element here instead of logging
 
-        } catch (error) {
-            // Handle potential errors during the asynchronous call
-            console.error("Error getting balance:", error);
-        }
-    } else {
-        // Inform the user if MetaMask or another provider isn't installed
-        console.log("Please install MetaMask!");
-        // Update the UI to prompt installation if desired
+    } catch (error) {
+      // Handle potential errors during the asynchronous call
+      console.error("Error getting balance:", error);
     }
+  } else {
+    // Inform the user if MetaMask or another provider isn't installed
+    console.log("Please install MetaMask!");
+    // Update the UI to prompt installation if desired
+  }
+}
+
+async function withdraw() {
+  console.log('Withdrawing...')
+  if (typeof window.ethereum !== "undefined") {
+    try {
+      walletClient = createWalletClient({
+        transport: custom(window.ethereum),
+      })
+      const [account] = await walletClient.requestAddresses()
+      const currentChain = await getCurrentChain(walletClient)
+
+      console.log("Current chain: ", currentChain)
+      console.log("Account: ", account)
+      console.log("Contract address: ", contractAddress)
+      console.log("Processing withdrawal...")
+
+      publicClient = createPublicClient({
+        transport: custom(window.ethereum),
+      })
+
+      const { request } = await publicClient.simulateContract({
+        address: contractAddress,
+        abi,
+        functionName: "withdraw",
+        account,
+        chain: currentChain
+      })
+
+      console.log("Transaction request: ", request)
+      const hash = await walletClient.writeContract(request)
+      console.log("Withdrawal processed: ", hash)
+
+    } catch (error) {
+      console.log(error)
+    }
+  } else {
+    withdrawButton.innerHTML = "Please install MetaMask"
+  }
 }
 
 // Event listeners
